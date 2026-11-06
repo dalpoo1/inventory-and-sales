@@ -1,0 +1,21 @@
+# Go
+backend/bin/
+*.exe
+*.exe~
+*.test
+*.out
+
+# Node
+frontend/node_modules/
+frontend/dist/
+
+# Env / secrets
+.env
+.env.local
+.env.*.local
+
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
