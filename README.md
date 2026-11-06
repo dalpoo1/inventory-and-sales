@@ -11,7 +11,7 @@ A warehouse supervisor's single app to **manage products, adjust stock, and reco
 | Layer     | Tech                                                              |
 |-----------|-------------------------------------------------------------------|
 | Database  | PostgreSQL 16 (migrations + seed applied automatically)           |
-| Backend   | Go 1.26 (`net/http` + `chi`, `pgx/v5`)                            |
+| Backend   | Go 1.22+ (`net/http` + `chi`, `pgx/v5`)                           |
 | Frontend  | React 18 + TypeScript (strict) + Vite + Tailwind + TanStack Query |
 | Tests     | Go (`testing` + testcontainers), Vitest                           |
 
@@ -42,6 +42,14 @@ stockflow/
 ```
 
 ---
+
+## Prerequisites
+
+- **Docker** (Desktop, with the Compose plugin) — for the one-command run and the backend integration tests.
+- **Go 1.22 or newer** — for local backend development and tests.
+- **Node 18+** — for local frontend development.
+
+> The backend `go.mod` targets **Go 1.22**, so any modern toolchain (1.22 through 1.27+) builds it. Dependencies are pinned to versions compatible with 1.22.
 
 ## Quick start (≤ 5 minutes)
 
