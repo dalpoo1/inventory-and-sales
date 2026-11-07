@@ -1,10 +1,12 @@
 import { useRef, useState } from 'react'
-import { useMutation } from '@tanstack/react-query'
+import { useMutation, useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import { api } from '../api'
 import { ApiError } from '../api/client'
-import type { CreateOrderInput, Order } from '../api/types'
+import { queryKeys } from '../api/queryKeys'
+import type { CreateOrderInput, Order, Product } from '../api/types'
 import { formatIDR } from '../utils/format'
+import { errorMessage } from '../utils/errorMessage'
 import { validateOrderDraft, type OrderItemDraft } from '../utils/validation'
 import Modal from './Modal'
 import Spinner from './Spinner'
@@ -30,6 +32,14 @@ export default function CreateOrderModal({
   const [serverMessage, setServerMessage] = useState<string | null>(null)
   const [created, setCreated] = useState<Order | null>(null)
   const idemKey = useRef<string | null>(null)
+
+  // Selectable products for the SKU dropdown (all products, active or not).
+  const productsQuery = useQuery({
+    queryKey: queryKeys.products.options,
+    queryFn: () => api.listProducts({ limit: 100 }),
+  })
+  const products = productsQuery.data?.data ?? []
+  const productBySku = new Map<string, Product>(products.map((p) => [p.sku, p]))
 
   const mutation = useMutation({
     mutationFn: () => {
@@ -160,44 +170,70 @@ export default function CreateOrderModal({
             </button>
           </div>
 
+          {productsQuery.isLoading && (
+            <p className="mb-2 flex items-center gap-2 text-xs text-gray-500">
+              <Spinner /> Loading products…
+            </p>
+          )}
+          {productsQuery.isError && (
+            <p className="mb-2 text-xs text-red-600">
+              Couldn't load products — {errorMessage(productsQuery.error)}
+            </p>
+          )}
+
           <div className="space-y-2">
-            {items.map((item, i) => (
-              <div key={i} className="rounded-md border border-gray-200 p-2">
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={item.sku}
-                    onChange={(e) => updateItem(i, { sku: e.target.value })}
-                    placeholder="SKU"
-                    className="w-1/2 rounded-md border border-gray-300 px-2 py-1.5 text-sm"
-                  />
-                  <input
-                    type="number"
-                    value={item.qty}
-                    min={1}
-                    onChange={(e) => updateItem(i, { qty: Number(e.target.value) })}
-                    placeholder="Qty"
-                    className="w-1/3 rounded-md border border-gray-300 px-2 py-1.5 text-sm"
-                  />
-                  <button
-                    onClick={() => removeItem(i)}
-                    disabled={items.length === 1}
-                    className="rounded-md border border-gray-300 px-2 text-sm text-gray-500 hover:bg-gray-50 disabled:opacity-40"
-                    aria-label="Remove item"
-                  >
-                    ✕
-                  </button>
+            {items.map((item, i) => {
+              const selected = item.sku ? productBySku.get(item.sku) : undefined
+              return (
+                <div key={i} className="rounded-md border border-gray-200 p-2">
+                  <div className="flex gap-2">
+                    <select
+                      value={item.sku}
+                      onChange={(e) => updateItem(i, { sku: e.target.value })}
+                      className="w-1/2 rounded-md border border-gray-300 px-2 py-1.5 text-sm"
+                    >
+                      <option value="">Select product…</option>
+                      {products.map((p) => (
+                        <option key={p.sku} value={p.sku}>
+                          {p.sku} — {p.name} (stock {p.stock})
+                          {p.isActive ? '' : ' · inactive'}
+                        </option>
+                      ))}
+                    </select>
+                    <input
+                      type="number"
+                      value={item.qty}
+                      min={1}
+                      onChange={(e) => updateItem(i, { qty: Number(e.target.value) })}
+                      placeholder="Qty"
+                      className="w-1/3 rounded-md border border-gray-300 px-2 py-1.5 text-sm"
+                    />
+                    <button
+                      onClick={() => removeItem(i)}
+                      disabled={items.length === 1}
+                      className="rounded-md border border-gray-300 px-2 text-sm text-gray-500 hover:bg-gray-50 disabled:opacity-40"
+                      aria-label="Remove item"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                  {selected && (
+                    <p className="mt-1 text-xs text-gray-500">
+                      {formatIDR(selected.price)} each · {selected.stock} in stock
+                      {selected.isActive ? '' : ' · inactive'}
+                    </p>
+                  )}
+                  {(fieldErrors.itemErrors?.[i]?.sku || serverItemErrors[item.sku.trim()]) && (
+                    <p className="mt-1 text-xs text-red-600">
+                      {serverItemErrors[item.sku.trim()] ?? fieldErrors.itemErrors?.[i]?.sku}
+                    </p>
+                  )}
+                  {fieldErrors.itemErrors?.[i]?.qty && (
+                    <p className="mt-1 text-xs text-red-600">{fieldErrors.itemErrors[i].qty}</p>
+                  )}
                 </div>
-                {(fieldErrors.itemErrors?.[i]?.sku || serverItemErrors[item.sku.trim()]) && (
-                  <p className="mt-1 text-xs text-red-600">
-                    {serverItemErrors[item.sku.trim()] ?? fieldErrors.itemErrors?.[i]?.sku}
-                  </p>
-                )}
-                {fieldErrors.itemErrors?.[i]?.qty && (
-                  <p className="mt-1 text-xs text-red-600">{fieldErrors.itemErrors[i].qty}</p>
-                )}
-              </div>
-            ))}
+              )
+            })}
           </div>
           {fieldErrors.items && <p className="mt-1 text-xs text-red-600">{fieldErrors.items}</p>}
         </div>
