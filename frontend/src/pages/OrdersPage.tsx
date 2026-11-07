@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import { api } from '../api'
+import { queryKeys } from '../api/queryKeys'
 import { errorMessage } from '../utils/errorMessage'
 import { formatIDR } from '../utils/format'
 import CreateOrderModal from '../components/CreateOrderModal'
@@ -16,14 +17,14 @@ export default function OrdersPage() {
   const queryClient = useQueryClient()
 
   const ordersQuery = useQuery({
-    queryKey: ['orders', page],
+    queryKey: queryKeys.orders.list(page),
     queryFn: () => api.listOrders({ page }),
   })
 
   const onCreated = () => {
-    queryClient.invalidateQueries({ queryKey: ['orders'] })
-    queryClient.invalidateQueries({ queryKey: ['products'] })
-    queryClient.invalidateQueries({ queryKey: ['summary'] })
+    queryClient.invalidateQueries({ queryKey: queryKeys.orders.all })
+    queryClient.invalidateQueries({ queryKey: queryKeys.products.all })
+    queryClient.invalidateQueries({ queryKey: queryKeys.summary })
   }
 
   const data = ordersQuery.data

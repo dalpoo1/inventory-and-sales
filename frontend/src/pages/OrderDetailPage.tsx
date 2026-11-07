@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link, useParams } from 'react-router-dom'
 import { api } from '../api'
+import { queryKeys } from '../api/queryKeys'
 import { errorMessage } from '../utils/errorMessage'
 import { formatIDR } from '../utils/format'
 import EmptyState from '../components/EmptyState'
@@ -19,7 +20,7 @@ export default function OrderDetailPage() {
   const [actionError, setActionError] = useState<string | null>(null)
 
   const orderQuery = useQuery({
-    queryKey: ['order', orderId],
+    queryKey: queryKeys.orders.detail(orderId),
     queryFn: () => api.getOrder(orderId),
     enabled: valid,
   })
@@ -30,10 +31,10 @@ export default function OrderDetailPage() {
       setConfirming(false)
       setActionError(null)
       // Stock is restored server-side; refresh products + summary + orders.
-      queryClient.invalidateQueries({ queryKey: ['order', orderId] })
-      queryClient.invalidateQueries({ queryKey: ['orders'] })
-      queryClient.invalidateQueries({ queryKey: ['products'] })
-      queryClient.invalidateQueries({ queryKey: ['summary'] })
+      queryClient.invalidateQueries({ queryKey: queryKeys.orders.detail(orderId) })
+      queryClient.invalidateQueries({ queryKey: queryKeys.orders.all })
+      queryClient.invalidateQueries({ queryKey: queryKeys.products.all })
+      queryClient.invalidateQueries({ queryKey: queryKeys.summary })
     },
     onError: (err) => setActionError(errorMessage(err)),
   })
