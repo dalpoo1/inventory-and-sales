@@ -68,6 +68,7 @@ export default function OrdersPage() {
                   <th className="px-4 py-3 text-right">Items</th>
                   <th className="px-4 py-3 text-right">Total</th>
                   <th className="px-4 py-3">Created</th>
+                  <th className="px-4 py-3 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
@@ -90,6 +91,14 @@ export default function OrdersPage() {
                     </td>
                     <td className="px-4 py-3 text-gray-500">
                       {new Date(o.createdAt).toLocaleDateString('id-ID')}
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <Link
+                        to={`/orders/${o.id}`}
+                        className="inline-block rounded-md border border-blue-300 px-3 py-1.5 text-xs font-medium text-blue-600 hover:bg-blue-50"
+                      >
+                        View
+                      </Link>
                     </td>
                   </tr>
                 ))}
