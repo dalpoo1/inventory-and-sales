@@ -6,11 +6,13 @@ export default function ProductTable({
   products,
   deletingId,
   onAdjust,
+  onEdit,
   onDelete,
 }: {
   products: Product[]
   deletingId: number | null
   onAdjust: (p: Product) => void
+  onEdit: (p: Product) => void
   onDelete: (p: Product) => void
 }) {
   return (
@@ -44,6 +46,12 @@ export default function ProductTable({
               <td className="px-4 py-3 text-gray-500">{formatTimeAgo(p.lastMovementAt)}</td>
               <td className="px-4 py-3">
                 <div className="flex justify-end gap-2">
+                  <button
+                    onClick={() => onEdit(p)}
+                    className="rounded-md border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50"
+                  >
+                    Edit
+                  </button>
                   <button
                     onClick={() => onAdjust(p)}
                     className="rounded-md border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50"

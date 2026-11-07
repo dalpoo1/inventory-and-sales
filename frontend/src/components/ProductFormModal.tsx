@@ -2,31 +2,46 @@ import { useState } from 'react'
 import { useMutation } from '@tanstack/react-query'
 import { api } from '../api'
 import { ApiError } from '../api/client'
+import type { Product } from '../api/types'
 import { validateProduct } from '../utils/validation'
 import Modal from './Modal'
 import Spinner from './Spinner'
 
+// One modal, two modes: `product` is passed for edit, omitted for create.
 export default function ProductFormModal({
+  product,
   onClose,
   onSuccess,
 }: {
+  product?: Product | null
   onClose: () => void
   onSuccess: () => void
 }) {
-  const [sku, setSku] = useState('')
-  const [name, setName] = useState('')
-  const [price, setPrice] = useState('')
+  const isEdit = product != null
+
+  const [sku, setSku] = useState(product?.sku ?? '')
+  const [name, setName] = useState(product?.name ?? '')
+  const [price, setPrice] = useState(product ? String(product.price) : '')
+  const [isActive, setIsActive] = useState(product?.isActive ?? true)
   const [fieldErrors, setFieldErrors] = useState<ReturnType<typeof validateProduct>>({})
   const [serverError, setServerError] = useState<string | null>(null)
 
   const mutation = useMutation({
-    mutationFn: () => api.createProduct({ sku: sku.trim(), name: name.trim(), price: Number(price) }),
+    mutationFn: () =>
+      isEdit
+        ? api.updateProduct(product.id, {
+            sku: sku.trim(),
+            name: name.trim(),
+            price: Number(price),
+            isActive,
+          })
+        : api.createProduct({ sku: sku.trim(), name: name.trim(), price: Number(price) }),
     onSuccess: () => onSuccess(),
     onError: (err) => {
       if (err instanceof ApiError && err.fields?.sku) {
         setFieldErrors({ sku: err.fields.sku })
       } else if (err instanceof ApiError) {
-        setServerError(err.message || 'Failed to create product.')
+        setServerError(err.message || 'Failed to save product.')
       } else {
         setServerError('Network error. Please try again.')
       }
@@ -42,7 +57,7 @@ export default function ProductFormModal({
   }
 
   return (
-    <Modal title="Add product" onClose={onClose}>
+    <Modal title={isEdit ? 'Edit product' : 'Add product'} onClose={onClose}>
       <div className="space-y-4">
         <div>
           <label className="mb-1 block text-sm font-medium text-gray-700">SKU</label>
@@ -78,6 +93,18 @@ export default function ProductFormModal({
           {fieldErrors.price && <p className="mt-1 text-xs text-red-600">{fieldErrors.price}</p>}
         </div>
 
+        {isEdit && (
+          <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
+            <input
+              type="checkbox"
+              checked={isActive}
+              onChange={(e) => setIsActive(e.target.checked)}
+              className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+            />
+            Active
+          </label>
+        )}
+
         {serverError && (
           <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
             {serverError}
@@ -97,7 +124,7 @@ export default function ProductFormModal({
             className="inline-flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-60"
           >
             {mutation.isPending && <Spinner />}
-            {mutation.isPending ? 'Saving…' : 'Save'}
+            {mutation.isPending ? 'Saving…' : isEdit ? 'Save changes' : 'Save'}
           </button>
         </div>
       </div>

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../api'
 import { ApiError } from '../api/client'
+import { queryKeys } from '../api/queryKeys'
 import type { Product, ProductStatusFilter } from '../api/types'
 import { useDebounce } from '../hooks/useDebounce'
 import { errorMessage } from '../utils/errorMessage'
@@ -27,6 +28,7 @@ export default function ProductsPage() {
   const [page, setPage] = useState(1)
 
   const [adjusting, setAdjusting] = useState<Product | null>(null)
+  const [editing, setEditing] = useState<Product | null>(null)
   const [showCreate, setShowCreate] = useState(false)
   const [deletingId, setDeletingId] = useState<number | null>(null)
   const [pageError, setPageError] = useState<string | null>(null)
@@ -34,15 +36,15 @@ export default function ProductsPage() {
   const queryClient = useQueryClient()
 
   const productsQuery = useQuery({
-    queryKey: ['products', { search: debouncedSearch, status, page }],
+    queryKey: queryKeys.products.list({ search: debouncedSearch, status, page }),
     queryFn: () => api.listProducts({ search: debouncedSearch, status, page }),
   })
 
-  const summaryQuery = useQuery({ queryKey: ['summary'], queryFn: () => api.getSummary() })
+  const summaryQuery = useQuery({ queryKey: queryKeys.summary, queryFn: () => api.getSummary() })
 
   const invalidate = () => {
-    queryClient.invalidateQueries({ queryKey: ['products'] })
-    queryClient.invalidateQueries({ queryKey: ['summary'] })
+    queryClient.invalidateQueries({ queryKey: queryKeys.products.all })
+    queryClient.invalidateQueries({ queryKey: queryKeys.summary })
   }
 
   const deleteMutation = useMutation({
@@ -140,6 +142,7 @@ export default function ProductsPage() {
             products={data.data}
             deletingId={deletingId}
             onAdjust={setAdjusting}
+            onEdit={setEditing}
             onDelete={onDelete}
           />
           <div className="flex items-center justify-between text-sm text-gray-600">
@@ -172,6 +175,16 @@ export default function ProductsPage() {
           onClose={() => setAdjusting(null)}
           onSuccess={() => {
             setAdjusting(null)
+            invalidate()
+          }}
+        />
+      )}
+      {editing && (
+        <ProductFormModal
+          product={editing}
+          onClose={() => setEditing(null)}
+          onSuccess={() => {
+            setEditing(null)
             invalidate()
           }}
         />
