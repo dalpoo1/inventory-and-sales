@@ -45,7 +45,8 @@ func buildProductFilters(search, status string) (string, []any) {
 	case "inactive":
 		clauses = append(clauses, "p.is_active = FALSE")
 	case "low":
-		clauses = append(clauses, "p.stock <= 10")
+		// Match the summary's definition of "low stock": active products only.
+		clauses = append(clauses, "p.is_active = TRUE AND p.stock <= 10")
 	}
 
 	where := ""
